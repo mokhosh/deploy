@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script> -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link href="https://unpkg.com/tailwindcss@^2/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div x-data="{open: false}">
+        <button x-on:click="open = true">works on v2 only</button>
+        <div x-bind:class="{hidden: ! open}" x-on:click.away="open = false">modal</div>
+    </div>
+    <div x-data="{open: false}">
+        <button x-on:click="open = true">works on v2 and v3</button>
+        <div x-show="open" x-on:click.away="open = false">modal</div>
+    </div>
+</body>
+</html>

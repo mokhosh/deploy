@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deploy Laravel</title>
+    <link href="./style.css" rel="stylesheet">
+    <script type="module" src="./main.js"></script>
+</head>
+
+<body>
+<div
+    x-data="{ip:'',domain:'',root:'',password:'',php:'8.1'}"
+    x-init="
+        ip = localStorage.getItem('ip')
+        domain = localStorage.getItem('domain')
+        root = localStorage.getItem('root')
+        php = localStorage.getItem('php')
+        // password = localStorage.getItem('password')
+
+        document.querySelectorAll('code').forEach(function(node) {
+
+            node.onclick = () => document.execCommand('copy')
+            node.addEventListener('copy', function(event) {
+                event.preventDefault()
+                if (event.clipboardData) event.clipboardData.setData('text/plain', node.textContent)
+                window.dispatchEvent(new CustomEvent('toast', {detail: {message: 'Code Copied'}}))
+            })
+        })
+    "
+    class="mx-auto mt-48 prose">
+
+    <label class="mt-2 text-sm uppercase">ip</label>
+    <input x-model="ip" x-on:input="localStorage.setItem('ip', $event.target.value)" class="w-full p-2 border rounded">
+    <label class="mt-2 text-sm uppercase">domain</label>
+    <input x-model="domain" x-on:input="localStorage.setItem('domain', $event.target.value)" class="w-full p-2 border rounded">
+    <label class="mt-2 text-sm uppercase">root</label>
+    <input x-model="root" x-on:input="localStorage.setItem('root', $event.target.value)" class="w-full p-2 border rounded">
+    <label class="mt-2 text-sm uppercase">php</label>
+    <input x-model="php" x-on:input="localStorage.setItem('php', $event.target.value)" class="w-full p-2 border rounded">
+    <label class="mt-2 text-sm uppercase">password</label>
+    <input x-model="password" class="w-full p-2 border rounded">
+
+    <h1 class="pt-24">Sign in and create git user</h1>
+    <li><code>ssh root@<span x-text="ip"></span></code></li>
+    <li><code>adduser git</code></li>
+    <li><code>usermod -aG sudo git</code></li>
+
+    <h1 class="pt-24">Set SSH keys</h1>
+    <h2>on local machine</h2>
+    <li><code>ssh-keygen</code></li>
+    <li><code>ls ~/.ssh</code></li>
+    <li><code>cat ~/.ssh/id_rsa.pub</code></li>
+    <h2>on VPS</h2>
+    <li><code>cd ~/.ssh</code></li>
+    <li><code>nano authorized_keys</code> paste public key</li>
+    <li>for other users you need to login to:</li>
+    <li><code>su git</code> then <code>mkdir ~/.ssh</code></li>
+    <li>fix permissions <code>chmod 700 ~/.ssh</code>?</li>
+    <li><code>nano ~/.ssh/authorized_keys</code> paste public key</li>
+    <li><code>chmod 600 ~/.ssh/authorized_keys</code> to restrict this from being modified?</li>
+    <li>exit to return to root user</li>
+    <h2>disable password login if needed</h2>
+    <li><code>sudo nano /etc/ssh/sshd_config</code></li>
+    <li>Find PasswordAuthentication and set that to no</li>
+    <li>Turn on PubkeyAuthentication yes</li>
+    <li>Turn off ChallengeResponseAuthentication no</li>
+    <li>Reload the SSH service <code>sudo systemctl reload sshd</code></li>
+    <li>Test new user in a new tab to prevent getting locked out</li>
+
+    <h1 class="pt-24">LEMP</h1>
+    <li><code>apt update</code></li>
+    <li><code>apt install nginx</code></li>
+    <li><code>apt install mysql-server</code></li>
+    <li><code>mysql</code></li>
+    <li><code>ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '<span x-text="password"></span>';</code></li>
+    <li><code>FLUSH PRIVILEGES;</code></li>
+    <li><code>mysql -u root -p</code></li>
+    <li><code>apt install software-properties-common</code></li>
+    <li><code>add-apt-repository ppa:ondrej/php</code></li>
+    <li><code>apt update</code></li>
+    <li><code>apt install php<span x-text="php"></span>-fpm php<span x-text="php"></span>-common php<span x-text="php"></span>-mysql php<span x-text="php"></span>-xml php<span x-text="php"></span>-xmlrpc php<span x-text="php"></span>-curl php<span x-text="php"></span>-gd php<span x-text="php"></span>-imagick php<span x-text="php"></span>-cli php<span x-text="php"></span>-dev php<span x-text="php"></span>-imap php<span x-text="php"></span>-mbstring php<span x-text="php"></span>-opcache php<span x-text="php"></span>-soap php<span x-text="php"></span>-zip unzip -y</code>
+    </li>
+    <li><code>nano /etc/php/<span x-text="php"></span>/fpm/php.ini</code></li>
+    <pre><code>upload_max_filesize = 32M 
+post_max_size = 48M 
+memory_limit = 256M 
+max_execution_time = 600 
+max_input_vars = 3000 
+max_input_time = 1000
+</code></pre>
+    <li><code>service php<span x-text="php"></span>-fpm restart</code></li>
+    <li><code>nano /etc/nginx/sites-available/<span x-text="domain"></span></code> paste:</li>
+    <pre><code>server {
+    listen 80;
+    listen [::]:80;
+    
+    root /var/www/html/<span x-text="root"></span>/public;
+    index index.php index.html index.htm index.nginx-debian.html;
+    
+    server_name <span x-text="domain"></span> www.<span x-text="domain"></span>;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php<span x-text="php"></span>-fpm.sock;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+</code></pre>
+    <li><code>sudo ln -s /etc/nginx/sites-available/<span x-text="domain"></span> /etc/nginx/sites-enabled/</code></li>
+    <li><code>sudo unlink /etc/nginx/sites-enabled/default</code></li>
+    <li><code>sudo nginx -t</code></li>
+    <li><code>sudo systemctl reload nginx</code></li>
+
+    <h1 class="pt-24">Git</h1>
+    <li><code>cd /var/www/html</code></li>
+    <li><code>mkdir <span x-text="root"></span> && sudo chown git:www-data <span x-text="root"></span> -R</code></li>
+    <li><code>apt update</code></li>
+    <li><code>apt install git</code></li>
+    <li><code>su git</code></li>
+    <li><code>cd ~ && git init --bare <span x-text="root"></span>.git</code></li>
+    <li><code>cd ~/<span x-text="root"></span>.git/hooks</code></li>
+    <li><code>touch post-receive</code></li>
+    <li><code>chmod +x post-receive</code></li>
+    <li><code>nano post-receive</code></li>
+    <pre><code>#!/bin/sh
+PROD="/var/www/html/<span x-text="root"></span>"
+REPO="/home/git/<span x-text="root"></span>.git"
+git --work-tree=$PROD --git-dir=$REPO checkout -f
+</code></pre>
+    <li>If you're using `main` git default branch:</li>
+    <pre><code>#!/bin/sh
+PROD="/var/www/html/<span x-text="root"></span>"
+REPO="/home/git/<span x-text="root"></span>.git"
+git --work-tree=$PROD --git-dir=$REPO checkout -f main
+</code></pre>
+    <li><code>exit</code></li>
+
+    <h2>local git repo</h2>
+    <li><code>git remote add production git@<span x-text="ip"></span>:<span x-text="root"></span>.git</code> (or set-url if using origin)</li>
+
+    <h1 class="pt-24">Redis</h1>
+    <li><code>sudo apt install redis-server</code></li>
+    <li><code>sudo nano /etc/redis/redis.conf</code></li>
+    <li>Change <code>supervised no</code> to <code>supervised systemd</code></li>
+    <li>Uncomment <code>requirepass foobared</code> and change password to <code><span x-text="password"></span></code></li>
+    <li><code>sudo systemctl restart redis.service</code></li>
+    <li><code>redis-cli ping</code></li>
+    <li><code>pecl install redis</code></li>
+    <li><code>sudo apt install php-redis</code></li>
+    <li><code>nano /etc/php/<span x-text="php"></span>/cli/conf.d/20-redis.ini</code></li>
+    <li><code>extension=redis.so</code></li>
+    <li><code>service php<span x-text="php"></span>-fpm reload</code></li>
+    <li><a href="https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-18-04">Read More...</a></li>
+
+    <h1 class="pt-24">Laravel</h1>
+    <li><code>apt install php<span x-text="php"></span>-mbstring php<span x-text="php"></span>-xml composer unzip</code></li>
+    <li><code>mysql -u root -p</code></li>
+    <li><code>CREATE DATABASE <span x-text="root"></span> DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</code></li>
+    <li><code>CREATE USER '<span x-text="root"></span>user'@'localhost' IDENTIFIED BY '<span x-text="password"></span>';</code></li>
+    <li><code>GRANT ALL ON <span x-text="root"></span>.* TO '<span x-text="root"></span>user'@'localhost';</code></li>
+    <li><code>FLUSH PRIVILEGES;</code></li>
+    <li><code>exit</code></li>
+    <li><code>cd /var/www/html/<span x-text="root"></span></code></li>
+    <li><code>composer install --no-dev</code></li>
+    <li><code>cp .env.example .env && nano .env</code></li>
+    <li><code>php artisan migrate</code></li>
+    <li><code>php artisan key:generate</code></li>
+    <li><code>sudo chgrp -R www-data storage bootstrap/cache vendor</code></li>
+    <li><code>sudo chmod -R ug+rwx storage bootstrap/cache vendor</code></li>
+
+    <h1 class="pt-24">SSL (non container)</h1>
+    <li><code>apt install libsquashfuse0 squashfuse fuse</code></li>
+    <li><code>apt install snapd</code></li>
+    <li><code>snap install core; snap refresh core</code></li>
+    <li><code>apt remove certbot</code></li>
+    <li><code>snap install --classic certbot</code></li>
+    <li><code>ln -s /snap/bin/certbot /usr/bin/certbot</code></li>
+    <li><code>certbot --nginx</code></li>
+    <li><code>certbot renew --dry-run</code></li>
+    
+    <h1 class="pt-24">SSL (container)</h1>
+    <li><code>apt update</code></li>
+    <li><code>sudo apt install python3 python3-venv libaugeas0</code></li>
+    <li><code>sudo apt remove certbot</code></li>
+    <li><code>sudo python3 -m venv /opt/certbot/</code></li>
+    <li><code>sudo /opt/certbot/bin/pip install --upgrade pip</code></li>
+    <li><code>sudo /opt/certbot/bin/pip install certbot certbot-nginx</code></li>
+    <li><code>sudo ln -s /opt/certbot/bin/certbot /usr/bin/certbot</code></li>
+    <li><code>sudo certbot --nginx</code></li>
+    <li><code>echo "0 0,12 * * * root /opt/certbot/bin/python -c 'import random; import time; time.sleep(random.random() * 3600)' && sudo certbot renew -q" | sudo tee -a /etc/crontab > /dev/null</code></li>
+    <li>Run this monthly to keep certbot updated <code>/opt/certbot/bin/pip install --upgrade certbot-nginx</code></li>
+
+    <h1 class="pt-24">Mail</h1>
+    
+    <h1 class="pt-24">Queue</h1>
+    <li><code>sudo apt install supervisor</code></li>
+    <li><code>nano /etc/supervisor/conf.d/horizon.conf</code></li>
+<pre><code>[program:horizon]
+process_name=%(program_name)s
+command=php /var/www/html/<span x-text="root"></span>/artisan horizon
+autostart=true
+autorestart=true
+user=www-data
+redirect_stderr=true
+stdout_logfile=/var/www/html/<span x-text="root"></span>/horizon.log
+stopwaitsecs=3600</code></pre>
+    <li><code>sudo supervisorctl reread</code></li>
+    <li><code>sudo supervisorctl update</code></li>
+    <li><code>sudo supervisorctl start horizon</code></li>
+
+    <h1 class="pt-24">Schedule</h1>
+    <li><code>sudo apt update</code></li>
+    <li><code>sudo apt install cron</code></li>
+    <li><code>sudo systemctl enable cron</code></li>
+    <li><code>crontab -e</code></li>
+    <li><code>* * * * * cd /var/www/html/<span x-text="root"></span> && php artisan schedule:run >> /dev/null 2>&1</code></li>
+
+</div>
+
+<aside
+    x-data="{ shown: false, timeout: null, message: null }"
+    x-show="shown"
+    x-on:toast.window="
+        clearTimeout(timeout);
+        shown = true;
+        message = $event.detail.message;
+        timeout = setTimeout(() => { shown = false }, 3000);
+    "
+    x-transition:enter="transition ease-out duration-300"
+    x-transition:enter-start="opacity-0 transform translate-x-12"
+    x-transition:leave="transition ease-out duration-300"
+    x-transition:leave-end="opacity-0 transform translate-x-12"
+    class="fixed bottom-0 right-0 z-50 flex p-3 m-8 text-lg font-semibold text-white bg-green-500 rounded shadow-xl"
+    style="display: none;"
+>
+    <svg class="w-6 h-6 mr-2 opacity-50 fill-current" viewBox="0 0 512 512"><path d="M256 8a248 248 0 100 496 248 248 0 000-496zm0 110a42 42 0 110 84 42 42 0 010-84zm56 254a12 12 0 01-12 12h-88a12 12 0 01-12-12v-24a12 12 0 0112-12h12v-64h-12a12 12 0 01-12-12v-24a12 12 0 0112-12h64a12 12 0 0112 12v100h12a12 12 0 0112 12v24z"></path></svg> 
+   <span x-text="message"></span>
+</aside>
+</body>
+
+</html>
