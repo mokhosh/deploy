@@ -126,6 +126,7 @@ max_input_time = 1000
     <li><code>apt update</code></li>
     <li><code>apt install git</code></li>
     <li><code>su git</code></li>
+    <li><code>git config --global init.defaultBranch main</code></li>
     <li><code>cd ~ && git init --bare <span x-text="root"></span>.git</code></li>
     <li><code>cd ~/<span x-text="root"></span>.git/hooks</code></li>
     <li><code>touch post-receive</code></li>
@@ -162,7 +163,7 @@ git --work-tree=$PROD --git-dir=$REPO checkout -f main
     <li><a href="https://www.digitalocean.com/community/tutorials/how-to-install-and-secure-redis-on-ubuntu-18-04">Read More...</a></li>
 
     <h1 class="pt-24">Laravel</h1>
-    <li><code>apt install php<span x-text="php"></span>-mbstring php<span x-text="php"></span>-xml composer unzip</code></li>
+    <li><code>apt install php<span x-text="php"></span>-mbstring php<span x-text="php"></span>-xml unzip</code></li>
     <li><code>mysql -u root -p</code></li>
     <li><code>CREATE DATABASE <span x-text="root"></span> DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;</code></li>
     <li><code>CREATE USER '<span x-text="root"></span>user'@'localhost' IDENTIFIED BY '<span x-text="password"></span>';</code></li>
@@ -170,6 +171,7 @@ git --work-tree=$PROD --git-dir=$REPO checkout -f main
     <li><code>FLUSH PRIVILEGES;</code></li>
     <li><code>exit</code></li>
     <li><code>cd /var/www/html/<span x-text="root"></span></code></li>
+    <li>Do the instructions at <code>https://getcomposer.org/download/</code> to install Composer properly.</li>
     <li><code>composer install --no-dev</code></li>
     <li><code>cp .env.example .env && nano .env</code></li>
     <li><code>php artisan migrate</code></li>
